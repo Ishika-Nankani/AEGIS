@@ -1,4 +1,0 @@
-Logistic Regression
-SGD
-Random Forest
-Naive Bayes

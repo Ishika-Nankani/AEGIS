@@ -1,7 +1,10 @@
 import numpy as np
 import pandas as pd
+import pickle
+import argparse
 
-def compute_tvd(dist1, dist2):
+def calculate_tvd(dist1, dist2):
+    """Calculate Total Variation Distance between two distributions."""
     total1 = sum(dist1.values())
     total2 = sum(dist2.values())
     support = set(dist1) | set(dist2)
@@ -12,12 +15,35 @@ def compute_tvd(dist1, dist2):
         abs_diff += abs(p - q)
     return 0.5 * abs_diff
 
-def compute_metric(reconstructed_dist, orig_df, masked_df, attribute, target):
-    orig_joint = orig_df.groupby([attribute, target]).size().to_dict()
-    recon_joint = reconstructed_dist.copy()
-    TVD_recon = compute_tvd(orig_joint, recon_joint)
-    return {
-        'TVD_masked': 0.0,
-        'TVD_recon': TVD_recon,
-        'Delta_TVD': abs(TVD_recon - 0.0)
-    }
+def load_distribution(path):
+    """Load distribution from pickle file."""
+    with open(path, 'rb') as f:
+        return pickle.load(f)
+
+def main():
+    parser = argparse.ArgumentParser(description="Calculate TVD PUD between two distributions")
+    parser.add_argument("--masked", type=str, required=True, help="Path to masked joint distribution")
+    parser.add_argument("--reconstructed", type=str, required=True, help="Path to reconstructed joint distribution")
+    
+    args = parser.parse_args()
+    
+    masked_dist = load_distribution(args.masked)
+    reconstructed_dist = load_distribution(args.reconstructed)
+    
+    total_pud = 0.0
+    count = 0
+    
+    for attribute in masked_dist:
+        if attribute in reconstructed_dist:
+            pud = calculate_tvd(masked_dist[attribute], reconstructed_dist[attribute])
+            total_pud += pud
+            count += 1
+    
+    if count > 0:
+        avg_pud = total_pud / count
+        print(f"PUD for TVD = {avg_pud:.6f}")
+    else:
+        print("No matching attributes found between distributions.")
+
+if __name__ == "__main__":
+    main()
